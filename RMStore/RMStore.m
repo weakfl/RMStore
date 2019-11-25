@@ -248,7 +248,11 @@ typedef void (^RMStoreSuccessBlock)(void);
     delegate.store = self;
     delegate.successBlock = successBlock;
     delegate.failureBlock = failureBlock;
-    [_productsRequestDelegates addObject:delegate];
+
+    @synchronized(_productsRequestDelegates)
+    {
+        [_productsRequestDelegates addObject:delegate];
+    }
  
     SKProductsRequest *productsRequest = [[SKProductsRequest alloc] initWithProductIdentifiers:identifiers];
 	productsRequest.delegate = delegate;
@@ -752,7 +756,13 @@ typedef void (^RMStoreSuccessBlock)(void);
 
 - (void)addProduct:(SKProduct*)product
 {
-    _products[product.productIdentifier] = product;    
+    NSString *productIdentifier = [[product productIdentifier] copy];
+    if (productIdentifier)
+    {
+        @synchronized(_products) {
+            _products[productIdentifier] = product;
+        }
+    }
 }
 
 - (void)postNotificationWithName:(NSString*)notificationName download:(SKDownload*)download userInfoExtras:(NSDictionary*)extras
@@ -777,7 +787,9 @@ typedef void (^RMStoreSuccessBlock)(void);
 
 - (void)removeProductsRequestDelegate:(RMProductsRequestDelegate*)delegate
 {
-    [_productsRequestDelegates removeObject:delegate];
+    @synchronized(_productsRequestDelegates) {
+        [_productsRequestDelegates removeObject:delegate];
+    }
 }
 
 @end
